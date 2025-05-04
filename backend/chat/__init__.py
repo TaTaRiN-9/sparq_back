@@ -4,8 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 __version__ = "1"
 app = FastAPI(
-    title="ChatProvider",
-    description="A ChatProvider Based on WebSocket",
+    title="Sparq",
+    description="Бэкэнд часть sparq",
     version=__version__,
 )
 app.add_middleware(

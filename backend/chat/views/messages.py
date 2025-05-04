@@ -27,13 +27,6 @@ async def get_first_unread_message(
     current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> int | None:
-    """
-    Send first unread message id
-    - group_id [int]
-
-    output:
-    - id [int]
-    """
     group = await group_membership_check(group_id=group_id, user=current_user, db=db)
     if not group:
         raise NotFoundException
@@ -44,7 +37,7 @@ async def get_first_unread_message(
     )
     if not first_unread_message:
         raise NotFoundException
-    return first_unread_message.id  # TODO: change model to schema to solve this error
+    return first_unread_message.id 
 
 
 @app.put("/message/{message_id}", tags=["Messages"])
@@ -54,14 +47,6 @@ async def edit_message_by_id(
     current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> str | None:
-    """
-    Edit text of the message by message id
-    - message_id [int]
-    - changed_message [str]
-
-    output:
-    - changed message [str]
-    """
     message = await get_message_by_id(
         db=db,
         message_id=message_id,
@@ -98,13 +83,6 @@ async def delete_message_by_id(
     current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> str | None:
-    """
-    Delete text of the message by message id
-    - message_id [int]
-
-    output:
-    - deleted message text [str]
-    """
     message = await get_message_by_id(
         db=db,
         message_id=message_id,

@@ -2,8 +2,7 @@ from fastapi import HTTPException, status
 
 
 class CredentialsException(HTTPException):
-    """UNAUTHORIZED 401"""
-
+    """401"""
     def __init__(self, *args, **kwargs):
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -12,8 +11,7 @@ class CredentialsException(HTTPException):
 
 
 class ForbiddenException(HTTPException):
-    """FORBIDDEN 403"""
-
+    """403"""
     def __init__(self, *args, **kwargs):
         super().__init__(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -22,8 +20,7 @@ class ForbiddenException(HTTPException):
 
 
 class AlreadyExistsException(HTTPException):
-    """BAD_REQUEST 400"""
-
+    """400"""
     def __init__(self, *args, **kwargs):
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -32,8 +29,7 @@ class AlreadyExistsException(HTTPException):
 
 
 class NotFoundException(HTTPException):
-    """NOT_FOUND 404"""
-
+    """404"""
     def __init__(self, *args, **kwargs):
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,

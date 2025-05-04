@@ -23,17 +23,6 @@ async def send_messages_endpoint(
     websocket: WebSocket,
     db: Session = Depends(get_db),
 ) -> None:
-    """
-    User send message api
-    - token [str]
-    - group_id [int]
-
-    [in websocket]
-    - text
-
-    output:
-     - None
-    """
     token = websocket.query_params.get("token")
     group_id = websocket.query_params.get("group_id")
     if token and group_id:
@@ -77,19 +66,11 @@ async def send_messages_endpoint(
             message = await create_message_controller(
                 db=db, user=user, group_id=group_id, text=data
             )
-            # Broadcast the message to all users in the group
+            
             asyncio.create_task(broadcast_message(group_id, message, db))
 
 
 async def broadcast_message(group_id: int, message: Message, db) -> None:
-    """
-    send message to online users and save unread message for other users
-    - group_id [int]
-    - message [Message]
-
-    output:
-    - None
-    """
     group = await get_group_by_id(db=db, group_id=group_id)
     if group:
         for member in group.members:
@@ -108,17 +89,6 @@ async def send_unread_messages_endpoint(
     websocket: WebSocket,
     db: Session = Depends(get_db),
 ) -> None:
-    """
-    Send unread messages
-    - token [str]
-    - group_id [int]
-
-    [in websocket]
-    - message
-
-    output:
-     - None
-    """
     token = websocket.query_params.get("token")
     group_id = websocket.query_params.get("group_id")
     if token and group_id:
@@ -157,7 +127,6 @@ async def send_unread_messages(
     group_id: int,
     db: Session = Depends(get_db),
 ):
-    """send unread messages to client"""
     while True:
         db.refresh(user)
         all_unread_messages: models.UnreadMessage = user.unread_messages
@@ -191,16 +160,6 @@ async def broadcast_changes(
     message_id: int | None = None,
     new_text: str | None = None,
 ) -> None:
-    """
-    broadcast changes to all online users on that group
-    - group_id [int]
-    - change_type [str]
-    - message_id [int]
-    - new_text [str]
-
-    output:
-    - None
-    """
     group = await get_group_by_id(db=db, group_id=group_id)
     if group:
         changed_value = {
@@ -222,26 +181,17 @@ async def broadcast_changes(
 async def send_change_to_user(
     user_id: int, change_data: dict, online_users: set
 ) -> None:
-    """
-    send changes for online users
-    - user_id [int]
-    - change_data [dict]
-    - online_users [set]
-
-    output:
-    - None
-    """
     if user_id in online_users:
         connection = websocket_connections[
             user_id
-        ]  # TODO this thing send changes to all users and this isn't good
+        ]
+
         await connection.send_text(json.dumps(change_data))
 
 
 async def send_messages_concurrently(
     websocket: WebSocket, messages: list[models.UnreadMessage]
 ):
-    """Send Messages"""
     tasks = [
         websocket.send_text(
             json.dumps(

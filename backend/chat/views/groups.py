@@ -30,32 +30,21 @@ async def create_group(
     current_user: schema.User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
-    """
-    Create Group
-    - address [str]
-    - name [str]
-
-    output:
-    - id [int]
-    - name [str]
-    - members [relationship "GroupMember"]
-    - messages [relationship "Message"]
-    """
-    # TODO: ADD A VALIDATION TO ALL OD THESE
-    print(address, name)
     existing_group = await get_group_by_address(address=address, db=db)
     if existing_group:
         raise AlreadyExistsException
-    # TODO:add other things to group like user name and ..
+    
     new_group = await create_group_controller(
         db=db, group=schema.GroupCreate(address=address, name=name)
     )
+
     await join_member_to_group(
         db=db,
         group=new_group,
         user=current_user,
         role=models.UserRole.admin,
     )
+
     return new_group
 
 
@@ -69,15 +58,6 @@ async def get_group_members(
     db: Session = Depends(get_db),
     current_user: schema.User = Depends(get_current_active_user),
 ):
-    """
-    get group members
-    - group_id [int]
-
-    output:
-    - GroupMembersResponse
-        - group_id: int
-        - members: list[str]
-    """
     group_member = await group_membership_check(
         group_id=group_id,
         db=db,
@@ -90,7 +70,9 @@ async def get_group_members(
         group_id=group_id,
         db=db,
     )
+    
     member_usernames = [str(member.username) for member in members]
+    
     return schema.GroupMembersResponse(
         group_id=group_id,
         members=member_usernames,
@@ -103,21 +85,18 @@ async def join_group(
     db: Session = Depends(get_db),
     current_user: schema.User = Depends(get_current_active_user),
 ):
-    """
-    Join user to selected Group
-    - address [str]
-
-    output:
-    - true [bool]
-    """
     group_add = await get_group_by_address(address=address, db=db)
+    
     if not group_add:
         raise NotFoundException
+    
     existing_member = await group_membership_check(
-        db=db, group_id=group_add.id, user=current_user  # type: ignore
+        db=db, group_id=group_add.id, user=current_user
     )
+    
     if existing_member:
         raise AlreadyExistsException
+    
     await join_member_to_group(
         db=db,
         group=group_add,
@@ -133,23 +112,13 @@ async def get_group_messages(
     current_user: Annotated[schema.User, Depends(get_current_active_user)],
     db: Session = Depends(get_db),
 ):
-    """
-    Get Group reads messages
-    - group_id [int]
-
-    output:
-    - username [str]
-    - message_id [int]
-    - time [str]
-    - message_text [str]
-    """
     group = await group_membership_check(
         group_id=group_id,
         user=current_user,
         db=db,
     )
     if not group:
-        raise NotFoundException  # TODO: raise errors better like if group exists but if user is not user of that group raise another error
+        raise NotFoundException
     messages = await get_reads_messages(
         user=current_user,
         group_id=group_id,

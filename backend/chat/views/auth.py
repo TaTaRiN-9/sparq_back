@@ -17,13 +17,6 @@ from chat.utils.jwt import (
     create_access_token,
 )
 
-
-@app.get("/health")
-async def health_check():
-    """Health Check View"""
-    return status.HTTP_200_OK
-
-
 @app.post("/token", response_model=Token)
 async def create_jwt_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
