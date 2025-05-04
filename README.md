@@ -1,109 +1,49 @@
-<h1 align="center"/>Chat App</h1>
+![Build Status](https://github.com/EgorDikanskiy/Sparq/actions/workflows/python-package.yml/badge.svg)
 
-<p align="center">A WebSocket-based chat application built with <a href="https://github.com/tiangolo/fastapi">FastAPI</a>
-</p>
+Мы используем версию python 3.12.7, устанавливайте env для poetry с этой версией python.
+Подробнее в документации [poetry](https://python-poetry.org/docs/managing-environments/)
 
-## Table of Contents
+Dependecies install
+We use poetry as dependecies manager. First install poetry using
+1. `pip install poetry`
+Than acitvate venv:
+2. `poetry shell`
+Than install all dependecies:
+3. `poetry install`
+To add new dependecies use:
+`poetry add <dep_name>`
 
-- [Overview](#overview)
-  - [How It Works](#how-it-works)
-    - [Features](#features)
-- [How to run it?](#how-to-run)
-- [Samples](#samples)
-- [ToDo](#todo)
+---
 
-# Overview
+Run dev serever:
+### Running the app using docker-compose
 
-This project is a WebSocket chat application created using FastAPI. It allows users to chat with others [**asynchronously**](https://stackoverflow.com/questions/748175/asynchronous-vs-synchronous-execution-what-is-the-difference) in **real-time**, **join groups**, **send** and **receive messages**, and more.<br>
+1. install `Docker`
 
-FrontEnd Connect to websocket and api with raw JavaScript and for styling uses bootstrap and css
+2. create `.env` file in the project root folder with the database credentials(see `.exapmle.env`)
 
-## How It Works
-
-By sending information with WebSockets, user can receive unread and new messages and send messages and also receive text changes such as edit and delete.
-
-<div align="center">
-<img src="readme_files/unread_message.png" width="710" height="380"/>
-</div>
-
-Also broadcast 'changes' and 'Send Message' are similar to this
-
-you can see how change broadcast work<sub> (Codes have been shortened for display. See here for full codes: <a href="backend/chat/views/websocket.py">websocket.py</a>)<sub>
-
-```python
-async def broadcast_changes(
-    group_id: int,
-    message_id: int,
-    new_text: str | None = None,
-    change_type: models.ChangeType,
-    db: Session,
-) -> None:
-  ...
-  online_users = set(websocket_connections.keys())
-  await asyncio.gather(
-      *[
-          send_change_to_user(
-              member.user.id, changed_value, online_users=online_users
-          )
-          for member in group.members
-      ]
-  )
-
-async def send_change_to_user(
-    user_id: int, change_data: dict, online_users: set
-) -> None:
-  ...
-  await connection.send_text(json.dumps(change_data))
-
-```
-
-### Features
-
-- **Real-time WebSocket** chat
-- Written as **async**
-- User **authentication** and **authorization**
-- Group **creation** and **management**
-- **Sending** and **receiving** messages
-- **Editing** and **deleting** messages
-
-# How to run?
-
-we need to get three docker images
-
-- 1.**Python** to run BackEnd and [Uvicorn](https://www.uvicorn.org/)
-- 2.**Nginx** to run FrontEnd
-- 3.**Postgres** to run DataBase
+3. execute command in the project root folder:
 
 ```bash
-# clone the project
-git clone https://github.com/houshmand-2005/chat_app
-# go to the folder
-cd chat_app
-# run project with docker
-docker-compose up -d
+docker-compose build
 ```
 
-# Samples
+```bash
+docker-compose up
+```
+---
 
-<img src="readme_files/chat.png"/>
+## Миграции:
+При запуске контейнера существующие миграции накатываются сами. Если вы хотите добавить миграцию
 
-<img src="readme_files/group_list.png" height="310" width="180"/>
+`alembic revision --autogenerate -m "Имя миграции"`
+`alembic upgrade head`
 
-<img src="readme_files/login.png" height="310" width="310"/>
+## Как это рабоатет?
 
-<img src="readme_files/chat_unread.png"  height="300" width="210"/>
-
-<hr>
-This is list of available APIs:<br>
-<img src="readme_files/api.png" height="495" width="570"/>
-
-# ToDo
-
-These are the things I want to do
-
-- Add validation (like email validation username validation and ...)
-- Make schemas with [Pydantic](https://pydantic.dev/) for each model(now it is a little incomplete and some models don't have it)
-- Make FrontEnd more beautiful and make it more clear (This will probably be hard. I'm not very good at css and html😁)
-- Support sending photos and files
-- Support replay on message
-- Add a cache service for handel unread messages and more (Like **redis**)
+Сейчас есть 3 важных компонента:
+1. В main.py есть WebSocket хэндлер, он принимает сообщения и подключения
+2. В модуле ws_handlers, есть обработчики пользовательских сообщений. ws_handler принимает json из webscoket сообщения, и в зависимости от содержания, использует обработчик из ws_handlers.handlers. Важно, что handler никак не взаимодействует с WebSocket соедением.
+3. в events_queue - обрабатываеются события связанные с ws подключениями. Отправка сообщений должна происходить тут. 
+ - **Зачем это?**
+ Отправка сообщений без отдельной очереди будет работать, до тех пор пока не появляется второй сервер/воркер. Напрмер, нам может потребоваться отправить сообщение пользователю, который подключен на другом узле. Для этого в очередь ивентов можно будет отправлять ивент об потребности в отправке данных какому-то пользователю (например с помощью redis или rabbitmq). Например, храним в redis словарь (user_id -> ивент). В очереди оправшиваем redis о новых ивентах для пользователей подключенных на нашем узле, как только в redis появляются eventы, обрабатываем их на нужном узле. 
